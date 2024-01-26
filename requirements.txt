@@ -1,0 +1,10 @@
+argparse
+cv2
+matplotlib
+numpy
+pyautogui
+pygetwindow
+screeninfo
+supervision
+threading
+ultralytics

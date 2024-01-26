@@ -1,0 +1,7 @@
+datasets/
+recordings/
+runs/detect/
+test/
+train/
+valid/
+data.yaml
