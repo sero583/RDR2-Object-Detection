@@ -12,6 +12,8 @@ import supervision as sv
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from roboflow import Roboflow
+import torch
+import onnxruntime
 
 # Sample video accessable here: https://youtu.be/185HsB_F2cs
 # Any other gameplay footage can also be used, however it's ideal to have the HUD (things such as map, health bar, etc.) to disabled. That is the case in my sample video.
@@ -47,16 +49,7 @@ os.makedirs("./datasets/", exist_ok=True)
 # Dataset path
 DATASET_DATA_YAML_PATH = os.path.join(os.getcwd(), "datasets/RDR2-Object-Detection-" + str(args.dataset_version) + "/data.yaml")
 
-# build new model
-model = YOLO("yolov8n.pt")
-# train the model, adjust to current used dataset version, to get a download copy go into datasets and run download_dataset.py
-model.train(data=DATASET_DATA_YAML_PATH, epochs=50)
-
-if args.train_only:
-    print("Starting training process with " + str(args.epochs) + " epochs...")
-    model.train(data=DATASET_DATA_YAML_PATH, epochs=args.epochs)
-    print("Training finished, exiting script...")
-    exit()
+print("Trying to use: " + DATASET_DATA_YAML_PATH)
 
 # Check if dataset version is on machine
 if not os.path.exists(DATASET_DATA_YAML_PATH):
@@ -65,8 +58,29 @@ if not os.path.exists(DATASET_DATA_YAML_PATH):
     print("Trying to download dataset using supplied credentials...")
     rf = Roboflow(api_key=args.rf_api_key)
     project = rf.workspace(args.rf_workspace).project(args.rf_project)
-    dataset = project.version(args.dataset_version).download("yolov8", output_directory="./datasets/")
+    dataset = project.version(args.dataset_version).download(model_format="yolov8", location="./datasets/")
 else: print("Dataset found, using version " + str(args.dataset_version))
+
+# build new model
+#model = YOLO("yolov8n.pt")
+model = YOLO("best.pt")
+# Export the model to ONNX format
+model.export(format='onnx')
+# Load the ONNX model
+session = onnxruntime.InferenceSession('yolov8.onnx')
+# Add the DmlExecutionProvider to the providers list
+session.set_providers(['DmlExecutionProvider', 'CPUExecutionProvider'])
+# Get the input and output names
+input_name = session.get_inputs()[0].name
+output_names = [x.name for x in session.get_outputs()]
+
+
+if args.train_only:
+    print("Starting training process with " + str(args.epochs) + " epochs...")
+    model.train(data=DATASET_DATA_YAML_PATH, epochs=int(args.epochs))
+    print("Training finished, exiting script...")
+    exit()
+# else: model.train(data=DATASET_DATA_YAML_PATH, epochs=args.epochs)
 
 # Verify if the game window is active
 if not args.ignore_game_not_active:
@@ -96,9 +110,18 @@ def update(frame):
     screenshot = pyautogui.screenshot(region=(x, y, width, height))
     frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
 
-    # Perform object detection using the model
+    # Convert the image to a numpy array and resize it
+    image = np.array(screenshot)
+    image = cv2.resize(image, (640, 480))
+
+    # Perform object detection using the ONNX model
+    #result = session.run(output_names, {input_name: image})
     results = model(frame)[0]
+
+    # Convert the result to a Detections object
+    #detections = sv.Detections.from_onnx(result, model.names)
     detections = sv.Detections.from_ultralytics(results)
+
     # Create labels
     labels = [
         f"{model.model.names[class_id]}: {confidence:.2%}"
@@ -111,6 +134,7 @@ def update(frame):
         scene=frame,
         detections=detections
     )
+
     # Label detections
     annotated_frame = label_annotator.annotate(
         scene=annotated_frame, detections=detections, labels=labels

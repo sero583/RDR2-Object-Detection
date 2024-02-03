@@ -4,4 +4,6 @@ runs/detect/
 test/
 train/
 valid/
+credentinals.txt
+*.cmd
 data.yaml
