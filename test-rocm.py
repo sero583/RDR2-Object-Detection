@@ -1,3 +1,4 @@
+# To test if ROCm from AMD is being detected, I wrote this little script.
 import torch, grp, pwd, os, subprocess
 devices = []
 try:

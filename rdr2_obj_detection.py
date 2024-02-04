@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(description="Red Dead Redemption 2 Object Detec
 # Add an argument, which only makes this script train
 parser.add_argument("--train-only", action="store_true", help="Only generates training files, instead of real-time screen casting.")
 # Add an argument to be able to specify epochs
-parser.add_argument("--epochs", default=50, help="Set the epcoh amount.")
+parser.add_argument("--epochs", default=250, help="Set the epcoh amount.")
 # Add an argument for dataset version specifying
 parser.add_argument("--dataset-version", default=3, help="Choose which dataset version should be used from roboflow.")
 # Add an argument to supply roboflow API key
@@ -38,6 +38,8 @@ parser.add_argument("--record", action="store_true", help="Enables recording the
 parser.add_argument("--fps", type=int, default=60, help="Frames per second (default: 60)")
 # Add an argument for the screenshot interval
 parser.add_argument("--interval", type=int, default=25, help="Interval between frames in milliseconds (default: 25)")
+# Add  an argument to define dataset version
+parser.add_argument("--model", default="best.pt", help="Define model file path")
 # Add an argument to ignore if game is not active
 parser.add_argument("--ignore-game-not-active", action="store_true", help="Skip the verification if the game window is active or not")
 
@@ -62,14 +64,13 @@ if not os.path.exists(DATASET_DATA_YAML_PATH):
 else: print("Dataset found, using version " + str(args.dataset_version))
 
 # build new model
-#model = YOLO("yolov8n.pt")
-model = YOLO("best.pt")
+model = YOLO(args.model)
 # Export the model to ONNX format
-model.export(format='onnx')
+model.export(format="onnx")
 # Load the ONNX model
-session = onnxruntime.InferenceSession('yolov8.onnx')
+session = onnxruntime.InferenceSession("yolov8.onnx")
 # Add the DmlExecutionProvider to the providers list
-session.set_providers(['DmlExecutionProvider', 'CPUExecutionProvider'])
+session.set_providers(["DmlExecutionProvider", "CPUExecutionProvider"])
 # Get the input and output names
 input_name = session.get_inputs()[0].name
 output_names = [x.name for x in session.get_outputs()]
@@ -108,18 +109,19 @@ label_annotator = sv.LabelAnnotator()
 def update(frame):
     # Capture the screen image within the ROI
     screenshot = pyautogui.screenshot(region=(x, y, width, height))
-    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-
     # Convert the image to a numpy array and resize it
     image = np.array(screenshot)
     image = cv2.resize(image, (640, 480))
+    # Create from the original image another numpy array so the resolution is better than 640x480
+    frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
 
-    # Perform object detection using the ONNX model
+    # Perform object detection using the ONNX model - that's the way you can utilize CUDA-Cores (GPU with multi-threading)
     #result = session.run(output_names, {input_name: image})
+    # Due to endless issues with my AMD GPU I just went to use the CPU
     results = model(frame)[0]
 
     # Convert the result to a Detections object
-    #detections = sv.Detections.from_onnx(result, model.names)
+    # When using ONNX: detections = sv.Detections.from_onnx(result, model.names)
     detections = sv.Detections.from_ultralytics(results)
 
     # Create labels

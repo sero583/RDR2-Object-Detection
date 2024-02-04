@@ -25,19 +25,22 @@ To start this project with different behavior, here is a list of all arguments a
 
 | Argument                  | Type          | Default Value   | Description                                                                 |
 |---------------------------|---------------|-----------------|-----------------------------------------------------------------------------|
+| --train-only              | Boolean       | False           | Specifies the used dataset version                                          |
+| --epochs                  | Integer       | 250             | Ability to supply your own API key without leaving it permanently in file   |
 | --dataset-version         | Integer       | 3               | Specifies the used dataset version                                          |
 | --rf-api-key              | String        | None            | Ability to supply your own API key without leaving it permanently in file   |
 | --rf-workspace            | String        | None            | Ability to supply your workspace name                                       |
 | --rf-project              | String        | None            | Ability to supply your project name                                         |
 | --fps                     | Integer       | 60              | Frames per second                                                           |
 | --interval                | Integer       | 25              | Interval between frames in milliseconds                                     |
-| --dataset                 | String        | yolov8n.pt      | Path to the YOLO model dataset                                              |
-| --model_weights           | String        | yolov3.weights  | Path to YOLO model weights                                                  |
-| --config_file             | String        | yolov3.cfg      | Path to YOLO model configuration file                                       |
-| --class_names_file        | String        | class_names.txt | Path to YOLO class names file                                               |
+| --model                   | String        | best.pt         | Path to the YOLO model                                                      |
 | --ignore-game-not-active  | Boolean       | False           | Skip the verification if the game window is active or not                   |
 
 Note that you only need to use initally --rf-api-key, --rfworkspace and --rf-project, so the script can download simply the desired dataset version for you from roboflow. You can also simply download it in YOLOv8 format and place the files in ```dataset/RDR2-Object-Detection-<YOUR_DESIRED_VERSION>```. Create the subfolders, if you don't have them already. ```<YOUR_DESIRED_VERSION>``` must match the version youre using in the argument, if you dont want to change something just name it simply "3".
+
+## Windows Troubleshooting
+
+When the model won't start, check if in your files the absolute path is being used and not the relative. This fixed many issues for me.
 
 ## Author
 
