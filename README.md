@@ -2,6 +2,8 @@
 
 This project made by Serhat Güler implements object detection in the game Red Dead Redemption 2 (short: RDR2) from Rockstar Games. In this project, a custom dataset specially for RDR2 has been made, so YOLO can detect more obstacles in the virtual world.
 
+![RDR2 Object Detection Demo](./images/rdr2_object_detection_demo_image.png)
+
 ## Dataset on roboflow universe
 Gather your own version at roboflow universie to test this project: https://universe.roboflow.com/yolov8-zpkhg/rdr2-object-detection
 
